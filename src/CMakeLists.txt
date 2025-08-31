@@ -1,9 +1,9 @@
 
-add_library(writer STATIC filist.cpp filist.hpp)
-add_executable(test test.cpp)
+add_library(fillist STATIC fillist.cpp fillist.hpp)
+add_executable(example example.cpp)
 
 
-target_link_libraries(test PRIVATE
-	writer
+target_link_libraries(example PRIVATE
+	fillist
 
 )

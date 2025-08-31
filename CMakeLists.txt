@@ -22,6 +22,6 @@ endif()
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-project("filist")
+project("fillist")
 
 add_subdirectory(src)
