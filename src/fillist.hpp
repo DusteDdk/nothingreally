@@ -6,8 +6,9 @@
 #include <stack>
 #include <iostream>
 #include <vector>
-
+#include <map>
 #include <cstdint>
+#include <memory>
 
 class Fillist
 {
@@ -19,38 +20,41 @@ private:
 
     enum class CmdType
     {
-        Line,
-        IndentIn,
-        IndentOut,
-        ScopeIn,
-        ScopeOut,
-        BeginQuote,
-        EndQuote,
+        Insert,
+        IndentMore,
+        IndentLess,
+        ScopeBegin,
+        ScopeEnd,
+        QuoteBegin,
+        QuoteEnd,
     };
     std::string cmdTypeStr(CmdType t);
+
+    struct Scope
+    {
+        std::string tag;
+        std::string begin;
+        std::string end;
+    };
 
     struct Cmd
     {
         CmdType type;
-        std::string payload;
-        int_fast32_t count;
+        std::string line;
     };
 
     std::list<Fillist::Cmd> cmds;
     std::list<Fillist::Cmd>::iterator pos;
 
-    void setIndent(int_fast32_t n);
+    void setIndent(int n);
 
-    struct
-    {
-        bool isDebug=false;
-        std::string pad = "";
-        int indent = 0;
-        bool isQuoting = false;
-        std::vector<std::string> debug{};
-    } state;
+    std::string pad = "";
+    int indent = 0;
+    bool isQuoting = false;
+    bool isVerbose = false;
 
-    void addCmd(CmdType t, std::string s, int_fast32_t c);
+
+    void addCmd(CmdType t, std::string line);
 
 public:
     Fillist(std::string basePath, std::string baseName, std::string extension);
@@ -80,9 +84,30 @@ public:
     Fillist &before(Pos p);
     Fillist &at(Pos p);
 
-
     std::string render();
-    Fillist &debugBegin();
-    Fillist &debugEnd();
+    Fillist &verbose(bool verbose);
+
+    Fillist &scopeBegin(std::string beginStr="{");
+    Fillist &scopeEnd(std::string endStr="}");
+
+    Fillist &indentMore();
+    Fillist &indentLess();
+
     Fillist &line(std::string line);
+
+    Fillist &quotedLine(std::string line, std::string quoteChar="\"");
+
+    Fillist &append(std::string str);
+
+    Fillist &appendQuoted(std::string str, std::string quoteChar="\"");
+
+    template <class... Args>
+    Fillist& line(std::string_view fmt, Args&&... args) {
+        return line( std::vformat(fmt, std::make_format_args(std::forward<Args>(args)...)) );
+    }
+
+    template <class... Args>
+    Fillist& append(std::string_view fmt, Args&&... args) {
+        return append( std::vformat(fmt, std::make_format_args(std::forward<Args>(args)...)) );
+    }
 };

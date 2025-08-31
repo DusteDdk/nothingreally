@@ -56,7 +56,12 @@
         "map": "cpp",
         "set": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "__functional_base": "cpp",
+        "locale": "cpp",
+        "sstream": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

@@ -4,20 +4,20 @@ std::string Fillist::cmdTypeStr(CmdType t)
 {
     switch (t)
     {
-    case CmdType::Line:
-        return "Line";
-    case CmdType::IndentIn:
-        return "IndentIn";
-    case CmdType::IndentOut:
-        return "IndentOut";
-    case CmdType::ScopeIn:
-        return "ScopeIn";
-    case CmdType::ScopeOut:
-        return "ScopeOut";
-    case CmdType::BeginQuote:
-        return "BeginQuote";
-    case CmdType::EndQuote:
-        return "EndQuote";
+    case CmdType::Insert:
+        return "Insert";
+    case CmdType::IndentMore:
+        return "IndentMore";
+    case CmdType::IndentLess:
+        return "IndentLess";
+    case CmdType::ScopeBegin:
+        return "ScopeBegin";
+    case CmdType::ScopeEnd:
+        return "ScopeEnd";
+    case CmdType::QuoteBegin:
+        return "QuoteBegin";
+    case CmdType::QuoteEnd:
+        return "QuoteEnd";
     }
 }
 
@@ -36,19 +36,17 @@ Fillist &Fillist::Pos::operator()()
     return parent;
 }
 
-// prefix --, returns new value
 Fillist::Pos &Fillist::Pos::operator--()
 {
     pos = std::prev(pos);
     return *this;
 }
 
-// postfix --, returns previous value
 Fillist::Pos Fillist::Pos::operator--(int)
 {
-    Pos tmp = *this; // copy current state
-    --(*this);       // reuse prefix
-    return tmp;      // return old state
+    Pos tmp = *this;
+    --(*this);
+    return tmp;
 }
 
 Fillist::Pos &Fillist::Pos::operator++()
@@ -59,105 +57,163 @@ Fillist::Pos &Fillist::Pos::operator++()
 
 Fillist::Pos Fillist::Pos::operator++(int)
 {
-    Pos tmp = *this; // copy current state
-    ++(*this);       // reuse prefix
-    return tmp;      // return old state
+    Pos tmp = *this;
+    ++(*this);
+    return tmp;
 }
 
 Fillist::Fillist(std::string basePath, std::string baseName, std::string extension)
     : basePath(basePath), baseName(baseName), extension(extension), pos(cmds.begin()) {};
 
-void Fillist::addCmd(CmdType t, std::string s, int_fast32_t c)
+void Fillist::addCmd(CmdType t, std::string line)
 {
-    if(state.isDebug) {
-        std::cout << format("{} / {} : {}", baseName, cmdTypeStr(t), s) <<std::endl;
+    pos = std::next(pos);
+    if (isVerbose)
+    {
+        int nPos = 0;
+        for (auto iter = cmds.begin(); iter != cmds.end(); iter++)
+        {
+            if (iter == pos)
+            {
+                break;
+            }
+            nPos++;
+        }
+        std::cout << format("[{}] {} @ {}/{} ({})", baseName, cmdTypeStr(t), nPos, cmds.size(), line) << std::endl;
     }
 
-    pos = cmds.insert(std::next(pos), {.type = t, .payload = s, .count = c});
+    pos = cmds.insert(pos, {.type = t, .line = line});
 }
 
-void Fillist::setIndent(int_fast32_t n)
+void Fillist::setIndent(int n)
 {
-    state.indent += n;
-    state.pad = std::string(state.indent * 4, ' ');
+    indent += n;
+    if(indent < 0) {
+        indent=0;
+        std::cout << "err, negative indent"  << std::endl;
+
+    }
+    pad = std::string(indent * 4, ' ');
 }
 
+Fillist::Pos Fillist::first()
+{
+    Pos tmp(*this);
+    tmp.pos = cmds.begin();
+    return tmp;
+}
+Fillist::Pos Fillist::last()
+{
+    Pos tmp(*this);
+    tmp.pos = std::prev(cmds.end());
+    return tmp;
+}
 
+Fillist &Fillist::before(Pos p)
+{
+    pos = std::prev(p.pos);
+    return *this;
+}
 
-    Fillist::Pos Fillist::first() {
-        Pos tmp(*this);
-        tmp.pos = cmds.begin();
-        return tmp;
-
-    }
-    Fillist::Pos Fillist::last() {
-        Pos tmp(*this);
-        tmp.pos = std::prev( cmds.end() );
-        return tmp;
-    }
-
-    Fillist & Fillist::before(Pos p) {
-        pos = std::prev( p.pos );
-        return *this;
-    }
-
-    Fillist & Fillist::at(Pos p) {
-        pos = p.pos ;
-        return *this;
-    }
-
-
+Fillist &Fillist::at(Pos p)
+{
+    pos = p.pos;
+    return *this;
+}
 
 std::string Fillist::render()
 {
+    if(isVerbose) {
+        std::cout << "Render begin" << std::endl;
+    }
     std::string str = "";
 
     for (Cmd &c : cmds)
     {
-
-
+        if(isVerbose) {
+            std::cout << "Cmd:" << cmdTypeStr(c.type) << " : " << c.line << std::endl;
+        }
         switch (c.type)
         {
-        case CmdType::Line:
-            str += std::format("{}{}\n", state.pad, c.payload, "\n");
+        case CmdType::Insert:
+            str += std::format("{}{}\n", pad, c.line);
             break;
-        case CmdType::IndentIn:
+        case CmdType::IndentMore:
             setIndent(1);
             break;
-        case CmdType::IndentOut:
+        case CmdType::IndentLess:
             setIndent(-1);
             break;
-        case CmdType::ScopeIn:
+        case CmdType::ScopeBegin:
+            str += std::format("{}{}\n", pad, c.line);
             setIndent(1);
             break;
-        case CmdType::ScopeOut:
+        case CmdType::ScopeEnd:
             setIndent(-1);
+            str += std::format("{}{}\n", pad, c.line);
             break;
-        case CmdType::BeginQuote:
-            state.isQuoting = true;
+        case CmdType::QuoteBegin:
+            isQuoting = true;
             break;
-        case CmdType::EndQuote:
-            state.isQuoting = false;
+        case CmdType::QuoteEnd:
+            isQuoting = false;
             break;
         }
+    }
+
+    if(isVerbose) {
+        std::cout << "Render end" << std::endl;
     }
 
     return str;
 }
 
-Fillist &Fillist::debugBegin()
+Fillist &Fillist::verbose(bool verbose)
 {
-    state.isDebug=true;
-    return *this;
-}
-Fillist &Fillist::debugEnd()
-{
-    state.isDebug=false;
+    isVerbose = verbose;
     return *this;
 }
 
-Fillist &Fillist::line(std::string line)
+
+Fillist &Fillist::scopeBegin(std::string beginStr)
 {
-    addCmd(CmdType::Line, line, 1);
+    addCmd(CmdType::ScopeBegin, beginStr);
     return *this;
 }
+
+Fillist &Fillist::scopeEnd(std::string endStr)
+{
+    addCmd(CmdType::ScopeEnd, endStr);
+    return *this;
+}
+
+Fillist &Fillist::indentMore() {
+    addCmd(CmdType::IndentMore, "");
+    return *this;
+}
+Fillist &Fillist::indentLess() {
+    addCmd(CmdType::IndentLess, "");
+    return *this;
+}
+
+
+Fillist &Fillist::line(std::string line)
+{
+    addCmd(CmdType::Insert, line);
+    return *this;
+}
+
+Fillist &Fillist::quotedLine(std::string str, std::string quoteChar) {
+    return line( std::format("{}{}{}",quoteChar, str, quoteChar) );
+}
+
+Fillist &Fillist::append(std::string str) {
+    (*pos).line += str;
+    return *this;
+}
+
+Fillist &Fillist::appendQuoted(std::string str, std::string quoteChar) {
+    return append( std::format("{}{}{}",quoteChar, str, quoteChar) );
+}
+
+
