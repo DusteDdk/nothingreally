@@ -110,4 +110,13 @@ public:
     Fillist& append(std::string_view fmt, Args&&... args) {
         return append( std::vformat(fmt, std::make_format_args(std::forward<Args>(args)...)) );
     }
+
+    std::string getBasePath();
+    std::string getBaseName();
+    std::string getExtension();
+    std::string getFileName();
+    std::string getFullName();
+
+    void save();
+
 };

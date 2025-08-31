@@ -2,7 +2,7 @@
 
 int main() {
 
-    Fillist w("./", "something", "exe");
+    Fillist w("./", "something", "txt");
 
     // Very top.
     Fillist::Pos top = w;
@@ -44,6 +44,7 @@ int main() {
     std::cout <<std::endl << "Result:" << std::endl;
     std::cout << w.render() << std::endl;
 
+    w.save();
 
     return 0;
 }

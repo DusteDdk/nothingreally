@@ -1,3 +1,6 @@
+#include <iostream>
+#include <fstream>
+
 #include "fillist.hpp"
 
 std::string Fillist::cmdTypeStr(CmdType t)
@@ -216,4 +219,30 @@ Fillist &Fillist::appendQuoted(std::string str, std::string quoteChar) {
     return append( std::format("{}{}{}",quoteChar, str, quoteChar) );
 }
 
+std::string Fillist::getBasePath() {
+    return basePath;
+}
+std::string Fillist::getBaseName() {
+    return baseName;
+}
+std::string Fillist::getExtension() {
+    return extension;
+}
 
+std::string Fillist::getFileName() {
+    return std::format("{}.{}", getBaseName(), getExtension());
+}
+std::string Fillist::getFullName() {
+    return std::format("{}/{}", getBasePath(), getFileName());
+}
+
+void Fillist::save() {
+    std::ofstream file;
+    file.open(getFullName());
+
+    bool temp = isVerbose;
+    isVerbose=false;
+    file << render();
+    isVerbose=temp;
+    file.close();
+}
