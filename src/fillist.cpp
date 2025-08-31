@@ -18,10 +18,6 @@ std::string Fillist::cmdTypeStr(CmdType t)
         return "BeginQuote";
     case CmdType::EndQuote:
         return "EndQuote";
-    case CmdType::DebugOn:
-        return "DebugOn";
-    case CmdType::DebugOff:
-        return "DebugOff";
     }
 }
 
@@ -73,6 +69,10 @@ Fillist::Fillist(std::string basePath, std::string baseName, std::string extensi
 
 void Fillist::addCmd(CmdType t, std::string s, int_fast32_t c)
 {
+    if(state.isDebug) {
+        std::cout << format("{} / {} : {}", baseName, cmdTypeStr(t), s) <<std::endl;
+    }
+
     pos = cmds.insert(std::next(pos), {.type = t, .payload = s, .count = c});
 }
 
@@ -83,44 +83,42 @@ void Fillist::setIndent(int_fast32_t n)
 }
 
 
-Fillist &Fillist::first() {
-    // inserting advances the iterator, so it wraps around to the first element.
-    pos=cmds.end();
-    return *this;
-}
-Fillist &Fillist::last() {
-    pos=std::prev( cmds.end() );
-    return *this;
-}
+
+    Fillist::Pos Fillist::first() {
+        Pos tmp(*this);
+        tmp.pos = cmds.begin();
+        return tmp;
+
+    }
+    Fillist::Pos Fillist::last() {
+        Pos tmp(*this);
+        tmp.pos = std::prev( cmds.end() );
+        return tmp;
+    }
+
+    Fillist & Fillist::before(Pos p) {
+        pos = std::prev( p.pos );
+        return *this;
+    }
+
+    Fillist & Fillist::at(Pos p) {
+        pos = p.pos ;
+        return *this;
+    }
+
 
 
 std::string Fillist::render()
 {
     std::string str = "";
 
-    int lineNumber = 0;
-    int cmdNumber = 0;
-
-    bool isDbg = false;
     for (Cmd &c : cmds)
     {
 
-        if (c.type == CmdType::DebugOn)
-        {
-            isDbg = true;
-        }
-
-        if (isDbg)
-        {
-            str += std::format("<CMD:{} Type: {}: LineNum: {} Payload: {}", cmdNumber, cmdTypeStr(c.type), lineNumber, c.payload);
-        }
-
-        cmdNumber++;
 
         switch (c.type)
         {
         case CmdType::Line:
-            lineNumber++;
             str += std::format("{}{}\n", state.pad, c.payload, "\n");
             break;
         case CmdType::IndentIn:
@@ -141,25 +139,20 @@ std::string Fillist::render()
         case CmdType::EndQuote:
             state.isQuoting = false;
             break;
-        case CmdType::DebugOff:
-            isDbg = false;
-        case CmdType::DebugOn:
-            str += "\n";
-            break;
         }
     }
 
     return str;
 }
 
-Fillist &Fillist::debugBegin(std::string tag)
+Fillist &Fillist::debugBegin()
 {
-    addCmd(CmdType::DebugOn, tag, 0);
+    state.isDebug=true;
     return *this;
 }
 Fillist &Fillist::debugEnd()
 {
-    addCmd(CmdType::DebugOff, "", 0);
+    state.isDebug=false;
     return *this;
 }
 

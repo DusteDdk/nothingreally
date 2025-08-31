@@ -4,6 +4,12 @@ int main() {
 
     Fillist w("./", "something", "exe");
 
+    // Very top.
+    Fillist::Pos top = w;
+
+    w.debugBegin();
+
+    // Add line, capture position of it.
     Fillist::Pos first = w.line("Hello World");
     w.line("Line 2")
     .line("Line 3");
@@ -12,11 +18,18 @@ int main() {
 
     w.line("Line 0.7");
 
-    (--first)().line("Before HelloWorld");
+    first().line("After Hello World");
+    (--first++)().line("Before Hello World");
 
-    w.last().line("VeryEnd");
+    first().line("Line 0.3");
 
-    w.first().line("VeryBegin");
+
+    w.at(w.last()).line("Last line.");
+    w.before(w.first()).line("First line (for now)");
+
+    top().line("Absolute top.");
+
+    std::cout <<std::endl << "Result:" << std::endl;
     std::cout << w.render() << std::endl;
 
 

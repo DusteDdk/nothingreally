@@ -26,8 +26,6 @@ private:
         ScopeOut,
         BeginQuote,
         EndQuote,
-        DebugOn,
-        DebugOff,
     };
     std::string cmdTypeStr(CmdType t);
 
@@ -45,6 +43,7 @@ private:
 
     struct
     {
+        bool isDebug=false;
         std::string pad = "";
         int indent = 0;
         bool isQuoting = false;
@@ -75,11 +74,15 @@ public:
     };
     friend struct Pos;
 
-    Fillist &first();
-    Fillist &last();
+    Pos first();
+    Pos last();
+
+    Fillist &before(Pos p);
+    Fillist &at(Pos p);
+
 
     std::string render();
-    Fillist &debugBegin(std::string tag = "");
+    Fillist &debugBegin();
     Fillist &debugEnd();
     Fillist &line(std::string line);
 };
